@@ -30,13 +30,17 @@ func ToRequest(req js.Value) (*http.Request, error) {
 	}
 	header := ToHeader(req.Get("headers"))
 
-	// ignore err
-	contentLength, _ := strconv.ParseInt(header.Get("Content-Length"), 10, 64)
+	contentLength, clErr := strconv.ParseInt(header.Get("Content-Length"), 10, 64)
+	bodyVal := req.Get("body")
+	if clErr != nil && !bodyVal.IsNull() && !bodyVal.IsUndefined() {
+		contentLength = -1
+	}
+
 	return &http.Request{
 		Method:           req.Get("method").String(),
 		URL:              reqUrl,
 		Header:           header,
-		Body:             ToBody(req.Get("body")),
+		Body:             ToBody(bodyVal),
 		ContentLength:    contentLength,
 		TransferEncoding: strings.Split(header.Get("Transfer-Encoding"), ","),
 		Host:             header.Get("Host"),
